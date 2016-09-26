@@ -4,6 +4,8 @@ import android.content.Context;
 import android.opengl.GLSurfaceView;
 import android.util.AttributeSet;
 
+import java.io.IOException;
+
 public class GLCollageView extends GLSurfaceView {
 	private final GLCollageRenderer mRenderer;
 
@@ -16,6 +18,16 @@ public class GLCollageView extends GLSurfaceView {
 
 		setEGLContextClientVersion(2);
 		mRenderer = new GLCollageRenderer();
+		mRenderer.runOnDraw(new Runnable() {
+			@Override
+			public void run() {
+				try {
+					GLDrawObject triangle = new Triangle();
+					mRenderer.addDrawObject(triangle);
+				} catch (IOException ignored) {
+				}
+			}
+		});
 
 		setRenderer(mRenderer);
 	}

@@ -31,9 +31,32 @@ class GLCollageRenderer implements android.opengl.GLSurfaceView.Renderer {
 		GLES20.glViewport(0, 0, width, height);
 
 		float ratio = (float) width / height;
-
-		// this projection matrix is applied to object coordinates in the onDrawFrame() method
-		Matrix.frustumM(mProjectionMatrix, 0, -ratio, ratio, -1, 1, 3, 7);
+		if (width > height) {
+			// this projection matrix is applied to object coordinates in the onDrawFrame() method
+			Matrix.frustumM(
+					mProjectionMatrix,  // result
+					0,                  // result offset
+					-ratio, // left
+					ratio,  // right
+					-1,     // bottom
+					1,      // top
+					3,      // near
+					7       // far
+			);
+		} else {
+			ratio = 1 / ratio;
+			// this projection matrix is applied to object coordinates in the onDrawFrame() method
+			Matrix.frustumM(
+					mProjectionMatrix,  // result
+					0,                  // result offset
+					-1,     // left
+					1,      // right
+					-ratio, // bottom
+					ratio,  // top
+					3,      // near
+					7       // far
+			);
+		}
 	}
 
 	@Override
@@ -47,7 +70,13 @@ class GLCollageRenderer implements android.opengl.GLSurfaceView.Renderer {
 		}
 
 		// Set the camera position (View matrix)
-		Matrix.setLookAtM(mViewMatrix, 0, 0, 0, -3, 0f, 0f, 0f, 0f, 1.0f, 0.0f);
+		Matrix.setLookAtM(
+				mViewMatrix,    // result
+				0,              // result offset
+				0, 0, -3,       // eye x, y, z
+				0f, 0f, 0f,     // center x, y, z
+				0f, 1.0f, 0.0f  // up x, y, z
+		);
 
 		// Calculate the projection and view transformation
 		Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);

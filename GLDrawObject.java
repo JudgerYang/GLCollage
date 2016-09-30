@@ -19,14 +19,13 @@ abstract class GLDrawObject {
 
 	private final Context mContext;
 
-	private final FloatBuffer mVertexBuffer;
+	private FloatBuffer mVertexBuffer;
+	private int mVertexCount;
 
 	// GL handles
 	final int mProgram;
 	private final int mPositionHandle;
 	private final int mMVPMatrixHandle;
-
-	private final int mVertexCount;
 
 	GLDrawObject(Context context, float[] vertexCoordinates) throws IOException {
 		mContext = context;
@@ -43,8 +42,11 @@ abstract class GLDrawObject {
 		mPositionHandle = GLES20.glGetAttribLocation(mProgram, "vPosition");
 		mMVPMatrixHandle = GLES20.glGetUniformLocation(mProgram, "uMVPMatrix");
 
-		mVertexCount = vertexCoordinates.length / COORDINATES_PER_VERTEX;
+		setVertexCoordinates(vertexCoordinates);
+	}
 
+	void setVertexCoordinates(float[] vertexCoordinates) {
+		mVertexCount = vertexCoordinates.length / COORDINATES_PER_VERTEX;
 		mVertexBuffer = GLUtility.generateVertexBuffer(vertexCoordinates);
 	}
 

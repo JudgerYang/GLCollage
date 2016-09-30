@@ -23,8 +23,6 @@ class TextureRectangle extends GLDrawObject {
 			0, 1, 2,    // 1st triangle
 			0, 2, 3,    // 2nd triangle
 	};
-	private static final RectF ORIGINAL_TEXTURE_RECT = new RectF(0, 1, 1, 0);
-	private RectF mTextureRect = new RectF(ORIGINAL_TEXTURE_RECT);
 
 	private ShortBuffer mDrawListBuffer;
 	private FloatBuffer mTextureVertexBuffer;
@@ -34,9 +32,13 @@ class TextureRectangle extends GLDrawObject {
 	private int mTextureHandle;
 
 	private Runnable mSetImageRun = null;
+	private RectF mRect;
+	private float mImageWidth;
+	private float mImageHeight;
 
 	TextureRectangle(Context context, RectF rect) throws IOException {
 		super(context, convertCoordinates(rect));
+		mRect = rect;
 
 		int[] textures = new int[1];
 		GLES20.glGenTextures(textures.length, textures, 0);
@@ -45,7 +47,13 @@ class TextureRectangle extends GLDrawObject {
 		mTextureCoordinatesHandle = GLES20.glGetAttribLocation(mProgram, "inputTextureCoordinate");
 		GLES20.glEnableVertexAttribArray(mTextureCoordinatesHandle);
 
-		setTextureCoordinates(convertTextureCoordinates(mTextureRect));
+		float[] textureCoordinates = {
+				0.0f, 0.0f,
+				0.0f, 1.0f,
+				1.0f, 1.0f,
+				1.0f, 0.0f,
+		};
+		setTextureCoordinates(textureCoordinates);
 
 		mTextureHandle = GLES20.glGetUniformLocation(mProgram, "u_Texture");
 
@@ -74,24 +82,16 @@ class TextureRectangle extends GLDrawObject {
 		};
 	}
 
+	public void setRect(RectF rect) {
+		mRect = rect;
+		setVertexCoordinates(convertCoordinates(mRect));
+		resize();
+	}
+
 	public void setImage(final Bitmap bmp) {
-		// Place the texture center-inside the rectangle.
-		mTextureRect = new RectF(ORIGINAL_TEXTURE_RECT);
-		float w = bmp.getWidth();
-		float h = bmp.getHeight();
-		float dx = 0, dy = 0;
-		if (w > h) {
-			dx = (w - h) / 2 / w;
-		} else {
-			dy = (h - w) / 2 / h;
-		}
-
-		mTextureRect.left += dx;
-		mTextureRect.right -= dx;
-		mTextureRect.bottom += dy;
-		mTextureRect.top -= dy;
-
-		setTextureCoordinates(convertTextureCoordinates(mTextureRect));
+		mImageWidth = bmp.getWidth();
+		mImageHeight = bmp.getHeight();
+		resize();
 
 		mSetImageRun = new Runnable() {
 			@Override
@@ -108,9 +108,25 @@ class TextureRectangle extends GLDrawObject {
 		};
 	}
 
-	private float mDegree = 30;
-	void setRotation(float degree) {
-		mDegree = degree;
+	private void resize() {
+		// Place the texture center-inside the rectangle.
+		RectF textureRect = new RectF(0, 1, 1, 0);
+		float dx = 0, dy = 0;
+		float rectWidth = Math.abs(mRect.width());
+		float rectHeight = Math.abs(mRect.height());
+		float rectRatio = rectWidth / rectHeight;
+		if (mImageWidth / mImageHeight > rectRatio) {
+			dx = (mImageWidth - mImageHeight * rectRatio) / 2 / mImageWidth;
+		} else {
+			dy = (mImageHeight - mImageWidth / rectRatio) / 2 /mImageHeight;
+		}
+
+		textureRect.left += dx;
+		textureRect.right -= dx;
+		textureRect.bottom += dy;
+		textureRect.top -= dy;
+
+		setTextureCoordinates(convertTextureCoordinates(textureRect));
 	}
 
 	private void setTextureCoordinates(float[] textureCoordinates) {

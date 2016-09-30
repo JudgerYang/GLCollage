@@ -28,7 +28,7 @@ class GLUtility {
 	};
 	public static final short[] UNIT_SQUARE_DRAW_ORDER = {0, 1, 2, 0, 2, 3};
 
-	public static FloatBuffer generateVertexBuffer(float[] coordinates) {
+	static FloatBuffer generateVertexBuffer(float[] coordinates) {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(coordinates.length * BYTES_PER_FLOAT);
 		byteBuffer.order(ByteOrder.nativeOrder());
 
@@ -41,7 +41,7 @@ class GLUtility {
 		return vertexBuffer;
 	}
 
-	public static ShortBuffer generateDrawOrderBuffer(short[] drawOrder) {
+	static ShortBuffer generateDrawOrderBuffer(short[] drawOrder) {
 		ByteBuffer byteBuffer = ByteBuffer.allocateDirect(drawOrder.length * BYTES_PER_SHORT);
 		byteBuffer.order(ByteOrder.nativeOrder());
 
@@ -64,5 +64,17 @@ class GLUtility {
 		GLES20.glCompileShader(shader);
 
 		return shader;
+	}
+
+	static class GLPoint {
+		float x;
+		float y;
+		float z;
+
+		GLPoint(float x, float y, float z) {
+			this.x = x;
+			this.y = y;
+			this.z = z;
+		}
 	}
 }

@@ -1,5 +1,6 @@
 package com.perfectcorp.youcamcollage.view.widget.glcollage;
 
+import android.graphics.RectF;
 import android.opengl.GLES20;
 import android.opengl.Matrix;
 
@@ -20,6 +21,13 @@ class GLCollageRenderer implements android.opengl.GLSurfaceView.Renderer {
 	private final float[] mProjectionMatrix = new float[16];
 	private final float[] mViewMatrix = new float[16];
 
+	// Position the eye behind the origin.
+	private final GLUtility.GLPoint mEye = new GLUtility.GLPoint(0f, 0f, 3f);
+	// We are looking toward the distance
+	private final GLUtility.GLPoint mLook = new GLUtility.GLPoint(0f, 0f, -4f);
+	// This is where our head would be pointing were we holding the camera.
+	private final GLUtility.GLPoint mUp = new GLUtility.GLPoint(0f, 1f, 0f);
+
 	@Override
 	public void onSurfaceCreated(GL10 gl, EGLConfig config) {
 		// Set the background frame color
@@ -30,33 +38,55 @@ class GLCollageRenderer implements android.opengl.GLSurfaceView.Renderer {
 	public void onSurfaceChanged(GL10 gl, int width, int height) {
 		GLES20.glViewport(0, 0, width, height);
 
-		float ratio = (float) width / height;
+		RectF projectionRect = new RectF(-1, 1, 1, -1);
 		if (width > height) {
-			// this projection matrix is applied to object coordinates in the onDrawFrame() method
-			Matrix.frustumM(
-					mProjectionMatrix,  // result
-					0,                  // result offset
-					-ratio, // left
-					ratio,  // right
-					-1,     // bottom
-					1,      // top
-					3,      // near
-					7       // far
-			);
+			// (-1,  1)      |      (1,  1)
+			//        *------+------*
+			//        |      |      |
+			//   -----+------+------+-----
+			//        |      |      |
+			//        *------+------*
+			// (-1, -1)      |      (1, -1)
+			float ratio = (float) width / height;
+			projectionRect.left = -ratio;
+			projectionRect.right = ratio;
 		} else {
-			ratio = 1 / ratio;
-			// this projection matrix is applied to object coordinates in the onDrawFrame() method
-			Matrix.frustumM(
-					mProjectionMatrix,  // result
-					0,                  // result offset
-					-1,     // left
-					1,      // right
-					-ratio, // bottom
-					ratio,  // top
-					3,      // near
-					7       // far
-			);
+			// (-1,  1)  |  (1,  1)
+			//        *--+--*
+			//        |  |  |
+			//   -----+--+--+-----
+			//        |  |  |
+			//        *--+--*
+			// (-1, -1)  |  (1, -1)
+			float ratio = (float) height / width;
+			projectionRect.top = ratio;
+			projectionRect.bottom = -ratio;
 		}
+
+		// This projection matrix is applied to object coordinates in the onDrawFrame() method,
+		// such that the unit square (rect: -1, 1, 1, -1) is center inside of this GLSurfaceView.
+		Matrix.frustumM(
+				mProjectionMatrix,      // result
+				0,                      // result offset
+				projectionRect.left,    // left
+				projectionRect.right,   // right
+				projectionRect.bottom,  // bottom
+				projectionRect.top,     // top
+				3,                      // near
+				7                       // far
+		);
+
+		// Set the camera position (View matrix)
+		Matrix.setLookAtM(
+				mViewMatrix,    // result
+				0,              // result offset
+				mEye.x, mEye.y, mEye.z,
+				mLook.x, mLook.y, mLook.z,
+				mUp.z, mUp.y, mUp.z
+		);
+
+		// Calculate the projection and view transformation
+		Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
 	}
 
 	@Override
@@ -68,18 +98,6 @@ class GLCollageRenderer implements android.opengl.GLSurfaceView.Renderer {
 		while ((r = mRunOnDraw.poll()) != null) {
 			r.run();
 		}
-
-		// Set the camera position (View matrix)
-		Matrix.setLookAtM(
-				mViewMatrix,    // result
-				0,              // result offset
-				0, 0, -3,       // eye x, y, z
-				0f, 0f, 0f,     // center x, y, z
-				0f, 1.0f, 0.0f  // up x, y, z
-		);
-
-		// Calculate the projection and view transformation
-		Matrix.multiplyMM(mMVPMatrix, 0, mProjectionMatrix, 0, mViewMatrix, 0);
 
 		for (GLDrawObject drawObject : mDrawObjectList) {
 			drawObject.draw(mMVPMatrix);
